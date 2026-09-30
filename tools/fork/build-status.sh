@@ -33,9 +33,13 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-require_cmd gh
+require_cmd gh jq
 check_gh_auth
 check_actions_enabled
+# gh's --commit wants the full 40-char SHA; expand abbreviations when git knows them.
+if [ -n "$COMMIT" ] && [ "${#COMMIT}" -lt 40 ]; then
+  COMMIT="$(git -C "$REPO_ROOT" rev-parse --verify --quiet "${COMMIT}^{commit}" 2>/dev/null || printf '%s' "$COMMIT")"
+fi
 
 say() { [ "$QUIET" = "1" ] || log "$*"; }
 
@@ -52,15 +56,15 @@ find_run() {
 
 # Prints: "<status> <conclusion>" of the arm64 job in run $1 ("" if not present yet).
 arm64_job_state() {
-  gh run view "$1" -R "$FORK_REPO" --json jobs \
-    --jq --arg job "$BUILD_JOB_NAME" \
-    '.jobs[] | select(.name | endswith($job)) | "\(.status) \(.conclusion)"' 2>/dev/null | head -n 1
+  gh run view "$1" -R "$FORK_REPO" --json jobs 2>/dev/null |
+    jq -r --arg job "$BUILD_JOB_NAME" \
+      '[.jobs[] | select(.name | endswith($job))][0] // empty | "\(.status) \(.conclusion // "")"' 2>/dev/null || true
 }
 
 list_arm64_artifacts() {
-  gh api "repos/$FORK_REPO/actions/runs/$1/artifacts" \
-    --jq --arg suf "$ARTIFACT_SUFFIX" \
-    '.artifacts[] | select(.name | endswith($suf)) | "\(.name)  \(.size_in_bytes / 1048576 | floor) MiB  expired=\(.expired)  expires=\(.expires_at)"' 2>/dev/null || true
+  gh api "repos/$FORK_REPO/actions/runs/$1/artifacts" 2>/dev/null |
+    jq -r --arg suf "$ARTIFACT_SUFFIX" \
+      '.artifacts[] | select(.name | endswith($suf)) | "\(.name)  \(.size_in_bytes / 1048576 | floor) MiB  expired=\(.expired)  expires=\(.expires_at)"' 2>/dev/null || true
 }
 
 deadline=$(( $(date +%s) + 3 * 60 * 60 ))
