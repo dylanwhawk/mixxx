@@ -96,11 +96,12 @@ tools/fork/build-status.sh main --wait      # release.yml build for "Mixxx Fork"
 - Artifacts expire; "newest unexpired" is what the launcher picks. If nothing is
   installable, push (or `gh workflow run release.yml -R dylanwhawk/mixxx --ref main`)
   to build again.
-- `gh workflow list -R dylanwhawk/mixxx` prints nothing until the fork's workflows are
-  registered: either a human clicks "I understand my workflows, go ahead and enable
-  them" on the Actions tab, or a push to the fork registers them (that push itself
-  does not build; dispatch with `gh workflow run <release|develop>.yml --ref <branch>`).
-  The scripts abort with a clear message while the count is zero.
+- A fresh fork does not run workflows on push until a human clicks "I understand my
+  workflows, go ahead and enable them" on https://github.com/dylanwhawk/mixxx/actions.
+  Symptoms: `gh workflow list` is empty until the first push registers the files, and
+  even after that only `gh workflow run <release|develop>.yml --ref <branch>` starts
+  runs while pushes start none. If `build-status.sh` finds no run after a push, check
+  that page first, then dispatch by hand. The scripts abort while zero workflows exist.
 
 ## Handling conflicts
 
