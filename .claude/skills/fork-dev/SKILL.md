@@ -96,10 +96,11 @@ tools/fork/build-status.sh main --wait      # release.yml build for "Mixxx Fork"
 - Artifacts expire; "newest unexpired" is what the launcher picks. If nothing is
   installable, push (or `gh workflow run release.yml -R dylanwhawk/mixxx --ref main`)
   to build again.
-- Actions must be enabled on the fork by a human once
-  (`gh workflow list -R dylanwhawk/mixxx` prints nothing until they click
-  "I understand my workflows, go ahead and enable them"). The scripts abort with that
-  message when it is missing.
+- `gh workflow list -R dylanwhawk/mixxx` prints nothing until the fork's workflows are
+  registered: either a human clicks "I understand my workflows, go ahead and enable
+  them" on the Actions tab, or a push to the fork registers them (that push itself
+  does not build; dispatch with `gh workflow run <release|develop>.yml --ref <branch>`).
+  The scripts abort with a clear message while the count is zero.
 
 ## Handling conflicts
 
